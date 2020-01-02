@@ -9,7 +9,7 @@ build: clean
 .PHONY: run
 ## run: runs go run main.go
 run:
-	go run -race main.go
+	go run -race cmd/brownie/main.go
 
 .PHONY: clean
 ## clean: cleans the binary

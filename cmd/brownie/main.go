@@ -7,6 +7,8 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/nlopes/slack"
+
+	"github.com/kiris/brownie/pkg/make"
 )
 
 type Env struct {
@@ -32,4 +34,9 @@ func main() {
 	for _, channel := range cannels {
 		fmt.Printf("ID: %s, Name: %s\n", channel.ID, channel.Name)
 	}
+
+	out, err := make.ExecMake("workspace/kiribot", "master", "usage")
+
+	fmt.Print(string(out))
+	fmt.Print(err)
 }
