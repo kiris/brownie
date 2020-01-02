@@ -8,7 +8,6 @@ import (
 
 type Make struct {
 	Dir     string
-	Branch  string
 	Targets []string
 	Args    map[string]string
 	DryRun  bool

@@ -3,13 +3,10 @@ package brownie
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/nlopes/slack"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/kiris/brownie/pkg/make"
 )
 
 type Server struct {
@@ -30,45 +27,40 @@ func NewServer(token string) *Server {
 	}
 }
 
-func (server *Server) Start() error {
-	server.rtm = server.client.NewRTM().NewRTM()
-	go server.rtm.ManageConnection()
+func (s *Server) Start(b *Brownie) error {
+	s.rtm = s.client.NewRTM().NewRTM()
+	go s.rtm.ManageConnection()
 
-	for msg := range server.rtm.IncomingEvents {
+	for msg := range s.rtm.IncomingEvents {
 		switch ev := msg.Data.(type) {
 		case *slack.ConnectedEvent:
 			log.WithFields(log.Fields{
 				"id":   ev.Info.User.ID,
 				"name": ev.Info.User.Name,
 			}).Info("success connection.")
-			server.botId = ev.Info.User.ID
-			server.botName = ev.Info.User.Name
+			s.botId = ev.Info.User.ID
+			s.botName = ev.Info.User.Name
 
 		case *slack.MessageEvent:
-			fmt.Printf("Message: %v\n", ev)
-			server.handleMessageEvent(ev)
+			s.handleMessageEvent(ev, b)
 
 		case *slack.InvalidAuthEvent:
 			return errors.New("invalid credentials")
 
 		default:
 			// Ignore other events..
-			fmt.Printf("other: %v\n", ev)
+			// fmt.Printf("other: %v\n", ev)
 		}
 	}
 
 	return nil
 }
 
-func (server *Server) handleMessageEvent(ev *slack.MessageEvent) {
+func (s *Server) handleMessageEvent(ev *slack.MessageEvent, b *Brownie) {
 	// Only response mention to bot. Ignore else.
 	msg := strings.Split(strings.TrimSpace(ev.Msg.Text), " ")
 
-
-	log.WithFields(log.Fields{
-		"msg": msg,
-	}).Info("mention message")
-	if msg[0] != fmt.Sprintf("<@%s>", server.botId) {
+	if msg[0] != fmt.Sprintf("<@%s>", s.botId) || len(msg) < 2 {
 		return
 	}
 
@@ -83,29 +75,23 @@ func (server *Server) handleMessageEvent(ev *slack.MessageEvent) {
 
 	switch msg[1] {
 	case "make":
-		currentDir, _ := os.Getwd()
-		cmd := make.Make {
-			Dir: currentDir + "/workspace/kiribot",
-			Branch: "master",
-			Targets: []string { "usage" },
-			DryRun: false,
+		if (len(msg) == 2) {
+			// exec interactive mode.
+		} else {
+			// exec batch mode.
+			project := msg[2]
+			targets := msg[3:]
+			b.ExecMake(project, targets)
 		}
-		out, err := cmd.Exec()
+	default:
+		log.WithFields(log.Fields{
+			"msg": msg[1],
+		}).Info("unknown message")
 
-		log.Info(string(out))
-
-		if err != nil {
-			log.WithFields(log.Fields{
-				"err": err,
-			}).Error("Failed to exec make.")
-		}
-
-		//args := msg[2:]
-		//if err := s.ResponseDeploy(ev); err != nil {
-		//	return fmt.Errorf("failed to post message: %s", err)
-		//}
 	}
+}
 
-
-
+type RunMakeArgs struct {
+	project string
+	targets []string
 }
