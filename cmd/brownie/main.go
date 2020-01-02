@@ -1,10 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"os"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/nlopes/slack"
 
@@ -15,28 +14,61 @@ type Env struct {
 	SlackToken string `envconfig:"SLACK_TOKEN" required:"true"`
 }
 
+func init() {
+	//// JSONフォーマット
+	//log.SetFormatter(&log.JSONFormatter{})
+
+	// 標準エラー出力でなく標準出力とする
+	log.SetOutput(os.Stdout)
+
+	// Warningレベル以上を出力
+	log.SetLevel(log.DebugLevel)
+}
+
 func main() {
 	var env Env
 	if err := envconfig.Process("", &env); err != nil {
-		log.Printf("[ERROR] Failed to process env var: %s", err)
+		log.WithFields(log.Fields{
+			"msg": err,
+		}).Error("Failed to process env.")
 		os.Exit(1)
 	}
 
 	// Listening slack event and response
-	log.Printf("[INFO] Start slack event listening")
+	log.Info("Start slack event listening")
 	client := slack.New(env.SlackToken)
 
-	cannels, err := client.GetChannels(false)
+	_, err := client.GetChannels(false)
 	if err != nil {
-		fmt.Printf("%s\n", err)
+		log.WithFields(log.Fields{
+			"msg": err,
+		}).Error("Failed to slack api call.")
 		os.Exit(1)
 	}
-	for _, channel := range cannels {
-		fmt.Printf("ID: %s, Name: %s\n", channel.ID, channel.Name)
+	//for _, channel := range channels {
+	//	log.WithFields(log.Fields{
+	//		"id": channel.ID,
+	//		"name": channel.Name,
+	//	}).Info("")
+	//
+	//}
+
+
+	currentDir, _ := os.Getwd()
+	cmd := make.Make {
+		Dir: currentDir + "/workspace/kiribot",
+		Branch: "master",
+		Targets: []string { "usage" },
+		DryRun: false,
 	}
+	out, err := cmd.Exec()
 
-	out, err := make.ExecMake("workspace/kiribot", "master", "usage")
+	log.Info(string(out))
 
-	fmt.Print(string(out))
-	fmt.Print(err)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err": err,
+		}).Error("Failed to exec make.")
+		os.Exit(1)
+	}
 }

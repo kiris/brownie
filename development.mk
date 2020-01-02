@@ -4,7 +4,7 @@ SLACK_TOKEN :=xoxo-
 ## build: build the application
 build: clean
 	@echo "Building..."
-	@go build -o ${APP} main.go
+	@go build -o ${APP} cmd/brownie/main.go
 
 .PHONY: run
 ## run: runs go run main.go
