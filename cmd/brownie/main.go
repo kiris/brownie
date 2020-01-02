@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/kelseyhightower/envconfig"
-	"github.com/kiris/brownie/pkg/brownie"
+	brownie2 "github.com/kiris/brownie"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
@@ -31,7 +31,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	server := brownie.NewServer(env.SlackToken)
+	server := brownie2.NewServer(env.SlackToken)
 	if err := server.Start(); err != nil {
 		log.WithFields(log.Fields{
 			"msg": err,
