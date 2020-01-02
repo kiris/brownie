@@ -1,13 +1,10 @@
 package main
 
 import (
-	"os"
-
-	log "github.com/sirupsen/logrus"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/nlopes/slack"
-
-	"github.com/kiris/brownie/pkg/make"
+	"github.com/kiris/brownie/pkg/brownie"
+	log "github.com/sirupsen/logrus"
+	"os"
 )
 
 type Env struct {
@@ -34,41 +31,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Listening slack event and response
-	log.Info("Start slack event listening")
-	client := slack.New(env.SlackToken)
-
-	_, err := client.GetChannels(false)
-	if err != nil {
+	server := brownie.NewServer(env.SlackToken)
+	if err := server.Start(); err != nil {
 		log.WithFields(log.Fields{
 			"msg": err,
-		}).Error("Failed to slack api call.")
-		os.Exit(1)
-	}
-	//for _, channel := range channels {
-	//	log.WithFields(log.Fields{
-	//		"id": channel.ID,
-	//		"name": channel.Name,
-	//	}).Info("")
-	//
-	//}
-
-
-	currentDir, _ := os.Getwd()
-	cmd := make.Make {
-		Dir: currentDir + "/workspace/kiribot",
-		Branch: "master",
-		Targets: []string { "usage" },
-		DryRun: false,
-	}
-	out, err := cmd.Exec()
-
-	log.Info(string(out))
-
-	if err != nil {
-		log.WithFields(log.Fields{
-			"err": err,
-		}).Error("Failed to exec make.")
+		}).Error("Failed to server start.")
 		os.Exit(1)
 	}
 }
