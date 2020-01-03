@@ -1,17 +1,11 @@
 package main
 
 import (
-	"github.com/kelseyhightower/envconfig"
 	log "github.com/sirupsen/logrus"
 	"os"
 
 	"github.com/kiris/brownie"
 )
-
-type Env struct {
-	SlackToken string `envconfig:"SLACK_TOKEN" required:"true"`
-	WorkspaceDir string `envconfig:"WORKSPACE_DIR" required:"true"`
-}
 
 func init() {
 	//// JSONフォーマット
@@ -25,22 +19,14 @@ func init() {
 }
 
 func main() {
-	var env Env
-	if err := envconfig.Process("", &env); err != nil {
-		log.WithFields(log.Fields{
-			"msg": err,
-		}).Error("Failed to process env.")
+	app, err := brownie.CreateAppFromEnvironmentVariables()
+	if err != nil {
+		log.WithField("cause", err).Error("Failed to load env.")
 		os.Exit(1)
 	}
 
-	b := brownie.Brownie {
-		WorkSpace:env.WorkspaceDir,
-	}
-	server := brownie.NewServer(env.SlackToken)
-	if err := server.Start(&b); err != nil {
-		log.WithFields(log.Fields{
-			"msg": err,
-		}).Error("Failed to server start.")
+	if err := app.StartListenAndResponse(); err != nil {
+		log.WithField("cause", err).Error("Failed to start listen and response.")
 		os.Exit(1)
 	}
 }

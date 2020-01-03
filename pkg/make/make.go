@@ -2,8 +2,6 @@ package make
 
 import (
 	"os/exec"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type Make struct {
@@ -13,32 +11,31 @@ type Make struct {
 	DryRun  bool
 }
 
-func (this *Make) Exec() (string, error)  {
+func (m *Make) Exec() (string, string, error)  {
 	cmd := exec.Command(
 		"make",
 		"-C",
-		this.Dir,
+		m.Dir,
 	)
-	cmd.Args = append(cmd.Args, this.options()...)
-	cmd.Args = append(cmd.Args, this.args()...)
-	cmd.Args = append(cmd.Args, this.Targets...)
-	log.Info("exec: " + cmd.String())
+	cmd.Args = append(cmd.Args, m.options()...)
+	cmd.Args = append(cmd.Args, m.args()...)
+	cmd.Args = append(cmd.Args, m.Targets...)
 
 	out, err := cmd.CombinedOutput()
-	return string(out), err
+	return cmd.String(), string(out), err
 }
 
-func (this *Make) options() []string {
+func (m *Make) options() []string {
 	var options []string
-	if this.DryRun {
+	if m.DryRun {
 		options = append(options, "-n")
 	}
 	return options
 }
 
-func (this *Make) args() []string {
-	args := make([]string, len(this.Args))
-	for key, value := range this.Args {
+func (m *Make) args() []string {
+	args := make([]string, len(m.Args))
+	for key, value := range m.Args {
 		args = append(args, key + "=" + value)
 	}
 

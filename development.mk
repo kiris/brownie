@@ -1,5 +1,3 @@
-SLACK_TOKEN :=xoxo-
-
 .PHONY: build
 ## build: build the application
 build: clean
