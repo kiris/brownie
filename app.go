@@ -1,37 +1,49 @@
 package brownie
 
 import (
-	"fmt"
+	"github.com/kiris/brownie/model"
+	"github.com/nlopes/slack"
+
+	"github.com/kiris/brownie/command"
+	"github.com/kiris/brownie/interaction"
 )
 
 type App struct {
-	slack     *SlackListener
-	workspace *Workspace
+	client            *slack.Client
+	commandListener   *command.Listener
+	interactionServer *interaction.Server
+	workspace         *model.Workspace
 }
 
-func CreateAppFromEnvironmentVariables() (*App, error) {
-	env, err := LoadEnv()
-	if err != nil {
-		return nil, err
-	}
+func CreateApp(slackToken, verificationToken, workSpaceDir string) *App {
+	client := slack.New(slackToken)
 
 	return &App{
-		slack:     NewSlackListener(env.SlackToken),
-		workspace: NewWorkspace(env.WorkspaceDir),
-	}, nil
+		client           : client,
+		commandListener  : command.CreateListener(client),
+		interactionServer: interaction.CreateServer(verificationToken),
+		workspace        : model.NewWorkspace(workSpaceDir),
+	}
 }
 
+func (app *App) Run() error {
+	app.commandListener.Handle("make", &command.MakeHandler{
+		Client   : app.client,
+		Workspace: app.workspace,
+	})
 
-func (app *App) StartListenAndResponse() error {
-	return app.slack.ListenAndResponse(app)
-}
+	// TODO error code
+	go app.commandListener.ListenAndResponse()
+	//if err := app.commandListener.ListenAndResponse(); err != nil {
+	//	return err
+	//}
 
-func (app *App) ExecMake(projectName string, targets []string) (*MakeResult, error) {
-	project := app.workspace.GetProject(projectName)
-
-	if project == nil {
-		return nil, fmt.Errorf("project not found. name = %s", projectName)
+	app.interactionServer.Handle("cancel", &interaction.CancelHandler {
+	})
+	if err := app.interactionServer.ListenAndServ("8080"); err != nil {
+		return err
 	}
 
-	return project.ExecMake(targets), nil
+
+	return nil
 }

@@ -25,7 +25,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := app.StartListenAndResponse(); err != nil {
+	if err := app.Run(); err != nil {
 		log.WithField("cause", err).Error("Failed to start listen and response.")
 		os.Exit(1)
 	}

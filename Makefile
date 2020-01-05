@@ -20,4 +20,4 @@ help:
 #	@echo 'run "cat .env.example > .env", then change the variables in the .env'
 #	@exit 1
 
-include *.mk
+include makefiles/*.mk
