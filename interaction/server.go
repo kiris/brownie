@@ -141,8 +141,8 @@ func (s *Server) handleInteraction(w http.ResponseWriter, r *http.Request) {
 	//
 	//	// Overwrite original drop down message.
 	//	originalMessage := message.OriginalMessage
-	//	originalMessage.Attachments[0].Text = fmt.Sprintf("OK mentionTo order %s ?", strings.Title(value))
-	//	originalMessage.Attachments[0].Actions = []listener.AttachmentAction{
+	//	originalMessage.attachments[0].Text = fmt.Sprintf("OK mentionTo order %s ?", strings.Title(value))
+	//	originalMessage.attachments[0].Actions = []listener.AttachmentAction{
 	//		{
 	//			CommandName:  actionStart,
 	//			Text:  "Yes",

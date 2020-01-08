@@ -1,7 +1,7 @@
 package interaction
 
 import (
-	"encoding/json"
+	"github.com/kiris/brownie/components"
 	"github.com/nlopes/slack"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -16,19 +16,19 @@ type ExecMakeHandler struct {
 }
 
 func (h *ExecMakeHandler) ServInteraction(w http.ResponseWriter, callback *slack.InteractionCallback) error {
-	component := NewMakeSettingsComponentFromCallback(callback, false)
+	component := components.NewMakeComponentFromInteraction(callback, false)
 
-	repoName := component.GetSelectedRepository()
-	branchName := component.GetSelectedBranch()
-	target := component.GetSelectedTarget()
-
+	repoName := component.SelectedRepository()
+	branchName := component.SelectedBranch()
+	target := component.SelectedTarget()
 	component.InProgress(callback.User)
-	original := callback.OriginalMessage
-	original.ReplaceOriginal = true
-	original.Attachments = component.Attachments
-	w.Header().Add("Content-type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(&original); err != nil {
+
+	renderer := components.InteractionRenderer{
+		Writer:   w,
+		Callback: callback,
+	}
+
+	if err := renderer.Render(component); err != nil {
 		return err
 	}
 
@@ -39,33 +39,28 @@ func (h *ExecMakeHandler) ServInteraction(w http.ResponseWriter, callback *slack
 				"repository": repoName,
 				"branch": branchName,
 				"target": target,
-			}).Error("failed to exec make command.")
+			}).Error("failed to async exec make.")
 		}
-		detailAttachments := component.Done(result)
-
-		options := slack.MsgOptionAttachments(component.Attachments ...)
-
-		if _, _, _, err := h.Client.UpdateMessage(component.channel, component.ts, options); err != nil {
-			log.WithError(err).WithFields(log.Fields{
-				"channel": component.channel,
-				"ts": component.ts,
-				"options": options,
-			}).Error( "failed to update message.")
+		outputComponent := component.Done(result)
+		if err := h.asyncResponse(component, outputComponent); err != nil {
+			log.WithError(err).Error("failed to async exec make.")
 		}
-
-		tsOption := slack.MsgOptionTS(component.ts)
-		detailAttachmentsOption := slack.MsgOptionAttachments(detailAttachments ...)
-		if _, _, _, err := h.Client.SendMessage(component.channel, tsOption, detailAttachmentsOption); err != nil {
-			log.WithError(err).WithFields(log.Fields{
-				"channel": component.channel,
-				"ts": component.ts,
-				"options": options,
-			}).Error( "failed to send detail message.")
-		}
-
-
 	}()
 
+	return nil
+}
+
+func (h *ExecMakeHandler) asyncResponse(component *components.MakeComponent, outputComponent *components.MakeOutputComponent) error {
+	renderer := components.ApiRenderer{
+		Client: h.Client,
+	}
+	if err := renderer.Render(component); err != err {
+		return errors.Wrap(err, "failed to async response.")
+	}
+
+	if err := renderer.Render(outputComponent); err != err {
+		return errors.Wrap(err, "failed to async response.")
+	}
 
 	return nil
 }

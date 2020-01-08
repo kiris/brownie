@@ -16,7 +16,7 @@ func CreateAppFromEnvironmentVariables() (*App, error) {
 		return nil, err
 	}
 
-	return CreateApp(env.SlackToken, env.VerificationToken, env.WorkspaceDir), nil
+	return NewApp(env.SlackToken, env.VerificationToken, env.WorkspaceDir), nil
 }
 
 func loadEnv() (env, error) {

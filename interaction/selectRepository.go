@@ -1,7 +1,7 @@
 package interaction
 
 import (
-	"encoding/json"
+	"github.com/kiris/brownie/components"
 	"github.com/kiris/brownie/model"
 	"github.com/nlopes/slack"
 	"github.com/pkg/errors"
@@ -13,19 +13,19 @@ type SelectRepositoryHandler struct {
 }
 
 func (h *SelectRepositoryHandler) ServInteraction(w http.ResponseWriter, callback *slack.InteractionCallback) error {
-	component := NewMakeSettingsComponentFromCallback(callback, true)
+	component := components.NewMakeComponentFromInteraction(callback, true)
 
-	repoName := component.GetSelectedRepository()
+	repoName := component.SelectedRepository()
 	repository := h.Workspace.GetRepository(repoName)
 	if repository == nil {
 		return errors.Errorf("failed to exec make command. repository not found: name = %s", repoName)
 	}
 	component.AppendSelectBranchAttachment()
 
-	original := callback.OriginalMessage
-	original.ReplaceOriginal = true
-	original.Attachments = component.Attachments
-	w.Header().Add("Content-type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	return json.NewEncoder(w).Encode(&original)
+	renderer := components.InteractionRenderer{
+		Writer:   w,
+		Callback: callback,
+	}
+	return renderer.Render(component)
 }
+

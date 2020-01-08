@@ -1,7 +1,7 @@
 package interaction
 
 import (
-	"encoding/json"
+	"github.com/kiris/brownie/components"
 	"github.com/kiris/brownie/model"
 	"github.com/nlopes/slack"
 	"net/http"
@@ -12,14 +12,13 @@ type SelectTargetHandler struct {
 }
 
 func (h *SelectTargetHandler) ServInteraction(w http.ResponseWriter, callback *slack.InteractionCallback) error {
-	component := NewMakeSettingsComponentFromCallback(callback, true)
-	component.AppendExecMakeAttachment()
+	component := components.NewMakeComponentFromInteraction(callback, true)
+	component.AppendConfirmExecAttachment()
 
-	original := callback.OriginalMessage
-	original.ReplaceOriginal = true
-	original.Attachments = component.Attachments
-	w.Header().Add("Content-type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	return json.NewEncoder(w).Encode(&original)
+	renderer := components.InteractionRenderer{
+		Writer:   w,
+		Callback: callback,
+	}
+	return renderer.Render(component)
 }
 

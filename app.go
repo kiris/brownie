@@ -1,6 +1,7 @@
 package brownie
 
 import (
+	"github.com/kiris/brownie/components"
 	"github.com/nlopes/slack"
 	"github.com/pkg/errors"
 
@@ -16,23 +17,21 @@ type App struct {
 	workspace         *model.Workspace
 }
 
-func CreateApp(slackToken, verificationToken, workSpaceDir string) *App {
+func NewApp(slackToken, verificationToken, workSpaceDir string) *App {
 	client := slack.New(slackToken)
 
-	return &App{
+	app := &App{
 		client           : client,
 		commandListener  : command.CreateListener(client),
 		interactionServer: interaction.CreateServer(verificationToken, ":8081"),
 		workspace        : model.NewWorkspace(workSpaceDir),
 	}
+	app.registerHandlers()
+
+	return app
 }
 
 func (app *App) Run() error {
-	app.commandListener.Handle("make", &command.MakeHandler{
-		Client   : app.client,
-		Workspace: app.workspace,
-	})
-
 	errChan := make(chan error, 1)
 	go func() {
 		err := app.commandListener.ListenAndResponse()
@@ -41,24 +40,39 @@ func (app *App) Run() error {
 		}
 		errChan <- nil
 	}()
-
-	app.interactionServer.Handle(interaction.ActionSelectRepository, &interaction.SelectRepositoryHandler {
-		Workspace: app.workspace,
-	})
-	app.interactionServer.Handle(interaction.ActionSelectBranch, &interaction.SelectBranchHandler {
-		Workspace: app.workspace,
-	})
-	app.interactionServer.Handle(interaction.ActionSelectTarget, &interaction.SelectTargetHandler {
-		Workspace: app.workspace,
-	})
-	app.interactionServer.Handle(interaction.ActionExecMake, &interaction.ExecMakeHandler{
-		Client:    app.client,
-		Workspace: app.workspace,
-	})
-	app.interactionServer.Handle(interaction.ActionCancel, &interaction.CancelHandler {})
 	if err := app.interactionServer.ListenAndServ(); err != nil {
 		return errors.Wrap(err, "failed interaction server start.")
 	}
 
 	return <-errChan
+}
+
+
+func (app *App) registerHandlers() {
+	renderer := components.ApiRenderer{
+		Client: app.client,
+	}
+
+	// commands
+	app.commandListener.Handle("make", &command.MakeHandler{
+		Client   : app.client,
+		Renderer : renderer,
+		Workspace: app.workspace,
+	})
+
+	// interactions
+	app.interactionServer.Handle(components.ActionSelectRepository, &interaction.SelectRepositoryHandler {
+		Workspace: app.workspace,
+	})
+	app.interactionServer.Handle(components.ActionSelectBranch, &interaction.SelectBranchHandler {
+		Workspace: app.workspace,
+	})
+	app.interactionServer.Handle(components.ActionSelectTarget, &interaction.SelectTargetHandler {
+		Workspace: app.workspace,
+	})
+	app.interactionServer.Handle(components.ActionExecMake, &interaction.ExecMakeHandler{
+		Client:    app.client,
+		Workspace: app.workspace,
+	})
+	app.interactionServer.Handle(components.ActionCancel, &interaction.CancelHandler {})
 }

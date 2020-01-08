@@ -1,7 +1,7 @@
 package interaction
 
 import (
-	"encoding/json"
+	"github.com/kiris/brownie/components"
 	"net/http"
 
 	"github.com/nlopes/slack"
@@ -11,13 +11,12 @@ type CancelHandler struct {
 }
 
 func (h *CancelHandler) ServInteraction(w http.ResponseWriter, callback *slack.InteractionCallback) error {
-	component := NewMakeSettingsComponentFromCallback(callback, false)
+	component := components.NewMakeComponentFromInteraction(callback, false)
 	component.Cancel(callback.User)
 
-	original := callback.OriginalMessage
-	original.ReplaceOriginal = true
-	original.Attachments = component.Attachments
-	w.Header().Add("Content-type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	return json.NewEncoder(w).Encode(&original)
+	renderer := components.InteractionRenderer{
+		Writer:   w,
+		Callback: callback,
+	}
+	return renderer.Render(component)
 }
