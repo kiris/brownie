@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/kiris/brownie/lib/file"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"path/filepath"
@@ -16,7 +17,7 @@ func NewWorkspace(rootDir string) *Workspace {
 	}
 }
 
-func (w *Workspace) GetRepositories() ([]*Repository, error) {
+func (w *Workspace) Repositories() ([]*Repository, error) {
 	fileInfos, err := ioutil.ReadDir(w.RootDir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get repositories: rootDir = %s", w.RootDir)
@@ -24,7 +25,7 @@ func (w *Workspace) GetRepositories() ([]*Repository, error) {
 
 	var repositories []*Repository
 	for _, f := range fileInfos {
-		repository := w.GetRepository(f.Name())
+		repository := w.Repository(f.Name())
 		if repository != nil {
 			repositories = append(repositories, repository)
 		}
@@ -32,11 +33,19 @@ func (w *Workspace) GetRepositories() ([]*Repository, error) {
 	return repositories, nil
 }
 
-func (w *Workspace) GetRepository(name string) *Repository {
+func (w *Workspace) Repository(name string) *Repository {
 	path := w.getRepositoryPath(name)
-	return GetProject(path)
+
+	if !file.IsExistsDir(path) {
+		return nil
+	}
+
+	return NewRepository(path)
 }
 
+func (w *Workspace) CreateRepository(url string) (*Repository, error) {
+	return NewRepositoryByGitClone(w.RootDir, url)
+}
 
 func (w *Workspace) getRepositoryPath(name string) string {
 	return filepath.Join(w.RootDir, name)

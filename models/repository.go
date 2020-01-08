@@ -1,12 +1,14 @@
 package models
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kiris/brownie/lib/file"
 	"github.com/kiris/brownie/lib/make"
+	"gopkg.in/src-d/go-git.v4"
 )
 
 type Repository struct {
@@ -36,15 +38,42 @@ type ExecMakeResult struct {
 	Error      error
 }
 
-func GetProject(path string) *Repository {
-	if !file.IsExistsDir(path) {
-		return nil
-	}
-
+func NewRepository(path string) *Repository {
 	return &Repository{
 		Name: filepath.Base(path),
 		Path: path,
 	}
+}
+
+func NewRepositoryByGitClone(rootPath string, url string) (*Repository, error) {
+	name := extractRepositoryName(url)
+	_, err := git.PlainClone(rootPath + "/" + name, false, &git.CloneOptions{
+		URL:      url,
+		Progress: os.Stdout,
+	})
+
+	return nil, err
+}
+
+
+func extractRepositoryName(name string) string {
+	// Strip trailing slashes.
+	for len(name) > 0 && name[len(name)-1] == '/' {
+		name = name[0 : len(name)-1]
+	}
+
+	// Find the last element
+	if i := strings.LastIndex(name, "/"); i >= 0 {
+		name = name[i+1:]
+	}
+
+	// Find
+	if i := strings.LastIndex(name, "."); i >= 0 {
+		name = name[:i]
+	}
+
+	return name
+
 }
 
 func (p *Repository) ExecMake(targets []string) *ExecMakeResult {

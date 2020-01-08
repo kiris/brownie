@@ -1,11 +1,10 @@
 package handlers
 
 import (
-	"github.com/nlopes/slack"
-	"net/http"
-
 	"github.com/kiris/brownie/components"
 	"github.com/kiris/brownie/models"
+	"github.com/nlopes/slack"
+	"net/http"
 )
 
 type SelectTargetHandler struct {

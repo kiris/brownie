@@ -11,16 +11,16 @@ import (
 )
 
 type ExecMakeHandler struct {
-	Client    *slack.Client
-	Workspace *models.Workspace
+	ApiRenderer *components.ApiRenderer
+	Workspace   *models.Workspace
 }
 
 func (h *ExecMakeHandler) ServInteraction(w http.ResponseWriter, callback *slack.InteractionCallback) error {
 	component := components.NewMakeComponentFromInteraction(callback, false)
 
-	repoName := component.SelectedRepository()
-	branchName := component.SelectedBranch()
-	target := component.SelectedTarget()
+	selectedRepository := component.SelectedRepository()
+	selectedBranch := component.SelectedBranch()
+	selectedTarget := component.SelectedTarget()
 	component.InProgress(callback.User)
 
 	renderer := components.InteractionRenderer{
@@ -33,12 +33,12 @@ func (h *ExecMakeHandler) ServInteraction(w http.ResponseWriter, callback *slack
 	}
 
 	go func() {
-		result, err := h.execMake(repoName, branchName, target)
+		result, err := h.execMake(selectedRepository, selectedBranch, selectedTarget)
 		if err != nil {
 			log.WithError(err).WithFields(log.Fields{
-				"repository": repoName,
-				"branch": branchName,
-				"target": target,
+				"repository": selectedRepository,
+				"branch":     selectedBranch,
+				"target":     selectedTarget,
 			}).Error("failed to async exec make.")
 		}
 		outputComponent := component.Done(result)
@@ -51,14 +51,11 @@ func (h *ExecMakeHandler) ServInteraction(w http.ResponseWriter, callback *slack
 }
 
 func (h *ExecMakeHandler) asyncResponse(component *components.MakeComponent, outputComponent *components.MakeOutputComponent) error {
-	renderer := components.ApiRenderer{
-		Client: h.Client,
-	}
-	if err := renderer.Render(component); err != err {
+	if err := h.ApiRenderer.Render(component); err != err {
 		return errors.Wrap(err, "failed to async response.")
 	}
 
-	if err := renderer.Render(outputComponent); err != err {
+	if err := h.ApiRenderer.Render(outputComponent); err != err {
 		return errors.Wrap(err, "failed to async response.")
 	}
 
@@ -66,7 +63,7 @@ func (h *ExecMakeHandler) asyncResponse(component *components.MakeComponent, out
 }
 
 func (h *ExecMakeHandler) execMake(repoName string, branchName string, target string) (*models.ExecMakeResult, error) {
-	repository := h.Workspace.GetRepository(repoName)
+	repository := h.Workspace.Repository(repoName)
 	if repository == nil {
 		return nil, errors.Errorf("repository not found: name = %s", repoName)
 	}

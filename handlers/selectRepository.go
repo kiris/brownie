@@ -16,10 +16,10 @@ type SelectRepositoryHandler struct {
 func (h *SelectRepositoryHandler) ServInteraction(w http.ResponseWriter, callback *slack.InteractionCallback) error {
 	component := components.NewMakeComponentFromInteraction(callback, true)
 
-	repoName := component.SelectedRepository()
-	repository := h.Workspace.GetRepository(repoName)
+	selectedRepository := component.SelectedRepository()
+	repository := h.Workspace.Repository(selectedRepository)
 	if repository == nil {
-		return errors.Errorf("failed to exec make command. repository not found: name = %s", repoName)
+		return errors.Errorf("failed to exec make command. repository not found: name = %s", selectedRepository)
 	}
 	component.AppendSelectBranchAttachment()
 

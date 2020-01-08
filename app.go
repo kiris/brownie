@@ -49,13 +49,17 @@ func (app *App) Run() error {
 
 
 func (app *App) registerHandlers() {
-	renderer := components.ApiRenderer{
+	renderer := &components.ApiRenderer{
 		Client: app.client,
 	}
 
 	// commands
-	app.commandListener.Handle("make", &handlers.MakeHandler{
-		Renderer : &renderer,
+	app.commandListener.Handle("make", &handlers.MakeCommandHandler{
+		Renderer : renderer,
+		Workspace: app.workspace,
+	})
+	app.commandListener.Handle("clone", &handlers.CloneCommandHandler{
+		Client: app.client,
 		Workspace: app.workspace,
 	})
 
@@ -70,8 +74,8 @@ func (app *App) registerHandlers() {
 		Workspace: app.workspace,
 	})
 	app.interactionServer.Handle(components.ActionExecMake, &handlers.ExecMakeHandler{
-		Client:    app.client,
-		Workspace: app.workspace,
+		ApiRenderer: renderer,
+		Workspace:   app.workspace,
 	})
 	app.interactionServer.Handle(components.ActionCancel, &handlers.CancelHandler {})
 }

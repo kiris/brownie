@@ -26,6 +26,7 @@ func (r InteractionRenderer) Render(component Component) error {
 	if ts != "" {
 		message.ReplaceOriginal = true
 	}
+
 	message.Attachments = attachments
 	r.Writer.Header().Add("Content-type", "application/json")
 	r.Writer.WriteHeader(http.StatusOK)
@@ -42,23 +43,18 @@ type ApiRenderer struct {
 }
 
 func (r *ApiRenderer) Render(component Component) error {
-	channel, ts, threadTs, attachments := component.Render()
+	channel, ts, threadTS, attachments := component.Render()
 	attachmentOption := slack.MsgOptionAttachments(attachments ...)
 
+	options := []slack.MsgOption { attachmentOption }
 	if ts != "" {
-		if _, _, _, err := r.Client.UpdateMessage(channel, ts, attachmentOption); err != nil {
-			return errors.Wrapf(err, "failed to render with update: Channel = %s, Ts = %s", channel, ts)
-		}
-	} else {
-		options := []slack.MsgOption {
-			slack.MsgOptionAttachments(attachments ...),
-		}
-		if threadTs != "" {
-			options = append(options, slack.MsgOptionTS(threadTs))
-		}
-		if _, _, err := r.Client.PostMessage(channel, options ...); err != nil {
-			return errors.Wrapf(err, "failed to render: Channel = %s", channel)
-		}
+		options = append(options, slack.MsgOptionUpdate(ts))
+	}
+	if threadTS != "" {
+		options = append(options, slack.MsgOptionTS(threadTS))
+	}
+	if _, _, err := r.Client.PostMessage(channel, options ...); err != nil {
+		return errors.Wrapf(err, "failed to render: channel = %s, ts = %s, threadTS = %s", channel, ts, threadTS)
 	}
 
 	return nil
