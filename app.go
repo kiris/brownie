@@ -2,19 +2,19 @@ package brownie
 
 import (
 	"github.com/kiris/brownie/components"
+	"github.com/kiris/brownie/handlers"
 	"github.com/nlopes/slack"
 	"github.com/pkg/errors"
 
-	"github.com/kiris/brownie/command"
-	"github.com/kiris/brownie/interaction"
-	"github.com/kiris/brownie/model"
+	libSlack "github.com/kiris/brownie/lib/slack"
+	"github.com/kiris/brownie/models"
 )
 
 type App struct {
 	client            *slack.Client
-	commandListener   *command.Listener
-	interactionServer *interaction.Server
-	workspace         *model.Workspace
+	commandListener   *libSlack.CommandListener
+	interactionServer *libSlack.InteractionServer
+	workspace         *models.Workspace
 }
 
 func NewApp(slackToken, verificationToken, workSpaceDir string) *App {
@@ -22,9 +22,9 @@ func NewApp(slackToken, verificationToken, workSpaceDir string) *App {
 
 	app := &App{
 		client           : client,
-		commandListener  : command.CreateListener(client),
-		interactionServer: interaction.CreateServer(verificationToken, ":8081"),
-		workspace        : model.NewWorkspace(workSpaceDir),
+		commandListener  : libSlack.NewCommandListener(client),
+		interactionServer: libSlack.NewInteractionServer(verificationToken, ":8081"),
+		workspace        : models.NewWorkspace(workSpaceDir),
 	}
 	app.registerHandlers()
 
@@ -54,25 +54,24 @@ func (app *App) registerHandlers() {
 	}
 
 	// commands
-	app.commandListener.Handle("make", &command.MakeHandler{
-		Client   : app.client,
-		Renderer : renderer,
+	app.commandListener.Handle("make", &handlers.MakeHandler{
+		Renderer : &renderer,
 		Workspace: app.workspace,
 	})
 
 	// interactions
-	app.interactionServer.Handle(components.ActionSelectRepository, &interaction.SelectRepositoryHandler {
+	app.interactionServer.Handle(components.ActionSelectRepository, &handlers.SelectRepositoryHandler {
 		Workspace: app.workspace,
 	})
-	app.interactionServer.Handle(components.ActionSelectBranch, &interaction.SelectBranchHandler {
+	app.interactionServer.Handle(components.ActionSelectBranch, &handlers.SelectBranchHandler {
 		Workspace: app.workspace,
 	})
-	app.interactionServer.Handle(components.ActionSelectTarget, &interaction.SelectTargetHandler {
+	app.interactionServer.Handle(components.ActionSelectTarget, &handlers.SelectTargetHandler {
 		Workspace: app.workspace,
 	})
-	app.interactionServer.Handle(components.ActionExecMake, &interaction.ExecMakeHandler{
+	app.interactionServer.Handle(components.ActionExecMake, &handlers.ExecMakeHandler{
 		Client:    app.client,
 		Workspace: app.workspace,
 	})
-	app.interactionServer.Handle(components.ActionCancel, &interaction.CancelHandler {})
+	app.interactionServer.Handle(components.ActionCancel, &handlers.CancelHandler {})
 }

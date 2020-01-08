@@ -1,18 +1,19 @@
-package command
+package handlers
 
 import (
-	"github.com/kiris/brownie/components"
 	"github.com/pkg/errors"
 
-	"github.com/kiris/brownie/model"
+	"github.com/kiris/brownie/components"
+	"github.com/kiris/brownie/lib/slack"
+	"github.com/kiris/brownie/models"
 )
 
 type MakeHandler struct {
 	Renderer  components.Renderer
-	Workspace *model.Workspace
+	Workspace *models.Workspace
 }
 
-func (h *MakeHandler) ExecCommand(req *Request) error {
+func (h *MakeHandler) ExecCommand(req *slack.CommandRequest) error {
 	if len(req.CommandArgs) == 0 {
 		repositories, err := h.Workspace.GetRepositories()
 		if err != nil {
@@ -38,14 +39,14 @@ func (h *MakeHandler) ExecCommand(req *Request) error {
 	}
 }
 
-//func (h *MakeHandler) sendResultMessages(req *Request, result *model.ExecMakeResult) error {
+//func (h *MakeHandler) sendResultMessages(req *CommandRequest, result *model.ExecMakeResult) error {
 //	ts, err := h.sendResultMessage(req, result)
 //	if err != nil {
 //		return err
 //	}
 //	return h.sendResultDetailMessage(req, ts, result)
 //}
-//func (h *MakeHandler) sendResultMessage(req *Request, result *model.ExecMakeResult) (string, error) {
+//func (h *MakeHandler) sendResultMessage(req *CommandRequest, result *model.ExecMakeResult) (string, error) {
 //	user, err := h.Client.GetUserInfo(req.Event.User)
 //	if err != nil {
 //		return "", err
@@ -105,7 +106,7 @@ func (h *MakeHandler) ExecCommand(req *Request) error {
 //	}
 //}
 //
-//func (h *MakeHandler) sendResultDetailMessage(req *Request, timestamp string, result *model.ExecMakeResult) error {
+//func (h *MakeHandler) sendResultDetailMessage(req *CommandRequest, timestamp string, result *model.ExecMakeResult) error {
 //	ts := slack.MsgOptionTS(timestamp)
 //	attachment := slack.MsgOptionAttachments(
 //		slack.Attachment{

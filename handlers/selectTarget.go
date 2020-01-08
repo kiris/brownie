@@ -1,14 +1,15 @@
-package interaction
+package handlers
 
 import (
-	"github.com/kiris/brownie/components"
-	"github.com/kiris/brownie/model"
 	"github.com/nlopes/slack"
 	"net/http"
+
+	"github.com/kiris/brownie/components"
+	"github.com/kiris/brownie/models"
 )
 
 type SelectTargetHandler struct {
-	Workspace *model.Workspace
+	Workspace *models.Workspace
 }
 
 func (h *SelectTargetHandler) ServInteraction(w http.ResponseWriter, callback *slack.InteractionCallback) error {

@@ -1,4 +1,4 @@
-package interaction
+package slack
 
 import (
 	"encoding/json"
@@ -13,53 +13,53 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Server struct {
+type InteractionServer struct {
 	verificationToken string
 	listenAddr        string
 	server            *http.Server
-	handlers          map[string]Handler
+	handlers          map[string]InteractionHandler
 }
 
 
-type Handler interface {
+type InteractionHandler interface {
 	ServInteraction(w http.ResponseWriter, message *slack.InteractionCallback) error
 }
 
-func CreateServer(verificationToken string, listenAddr string) *Server {
+func NewInteractionServer(verificationToken string, listenAddr string) *InteractionServer {
 	server := &http.Server{
 		Addr:         listenAddr,
-		// Handler:      tracing(nextRequestID)(logging(logger)(router)),
+		// InteractionHandler:      tracing(nextRequestID)(logging(logger)(router)),
 		// ErrorLog:     log,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
 	}
 
-	return &Server{
+	return &InteractionServer{
 		verificationToken: verificationToken,
 		listenAddr       : listenAddr,
 		server           : server,
-		handlers         : map[string]Handler{},
+		handlers         : map[string]InteractionHandler{},
 	}
 }
 
 
-func (s *Server) ListenAndServ() error {
-	http.HandleFunc("/interaction", s.handleInteraction)
+func (s *InteractionServer) ListenAndServ() error {
+	http.HandleFunc("/interaction", s.handleInteractionRequest)
 
 	if err := s.server.ListenAndServe(); err != nil {
 		return err
 	}
 
-	log.Info("Server is ready to handle requests at", s.listenAddr)
+	log.Info("InteractionServer is ready to handle requests at", s.listenAddr)
 	return nil
 }
 
-func (s *Server) Handle(actionName string, handler Handler) {
+func (s *InteractionServer) Handle(actionName string, handler InteractionHandler) {
 	s.handlers[actionName] = handler
 }
 
-func (s *Server) handleInteraction(w http.ResponseWriter, r *http.Request) {
+func (s *InteractionServer) handleInteractionRequest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		log.WithField("method", r.Method).Warn("invalid method request.")
 		w.WriteHeader(http.StatusMethodNotAllowed)

@@ -1,4 +1,4 @@
-package command
+package slack
 
 import (
 	"fmt"
@@ -10,26 +10,34 @@ import (
 )
 
 
-type Listener struct {
+type CommandListener struct {
 	Rtm      *slack.RTM
 	botId    string
 	botName  string
-	handlers map[string]Handler
+	handlers map[string]CommandHandler
 }
 
 
-type Handler interface {
-	ExecCommand(req *Request) error
+type CommandHandler interface {
+	ExecCommand(req *CommandRequest) error
 }
 
-func CreateListener(client *slack.Client) *Listener {
-	return &Listener{
+type CommandRequest struct {
+	listener    *CommandListener
+	Event       *slack.MessageEvent
+	Mention     string
+	CommandName string
+	CommandArgs []string
+}
+
+func NewCommandListener(client *slack.Client) *CommandListener {
+	return &CommandListener{
 		Rtm     : client.NewRTM(),
-		handlers: map[string]Handler{},
+		handlers: map[string]CommandHandler{},
 	}
 }
 
-func (l *Listener) ListenAndResponse() error {
+func (l *CommandListener) ListenAndResponse() error {
 	go l.Rtm.ManageConnection()
 
 	for msg := range l.Rtm.IncomingEvents {
@@ -61,11 +69,11 @@ func (l *Listener) ListenAndResponse() error {
 	return nil
 }
 
-func (l *Listener) Handle(name string, handler Handler) {
+func (l *CommandListener) Handle(name string, handler CommandHandler) {
 	l.handlers[name] = handler
 }
 
-func (l *Listener) handleMessageEvent(ev *slack.MessageEvent) {
+func (l *CommandListener) handleMessageEvent(ev *slack.MessageEvent) {
 	req := l.parseRequest(ev)
 	if req == nil {
 		return
@@ -93,13 +101,13 @@ func (l *Listener) handleMessageEvent(ev *slack.MessageEvent) {
 	}
 }
 
-func (l *Listener) parseRequest(event *slack.MessageEvent) *Request {
+func (l *CommandListener) parseRequest(event *slack.MessageEvent) *CommandRequest {
 	tokens := strings.Split(strings.TrimSpace(event.Msg.Text), " ")
 	if len(tokens) == 1 {
 		return nil
 	}
 
-	return &Request{
+	return &CommandRequest{
 		listener   : l,
 		Event      : event,
 		Mention    : tokens[0],
@@ -108,7 +116,7 @@ func (l *Listener) parseRequest(event *slack.MessageEvent) *Request {
 	}
 }
 
-func (l *Listener) parseCommandName(tokens []string) string {
+func (l *CommandListener) parseCommandName(tokens []string) string {
 	if len(tokens) < 2 {
 		return "help"
 	} else {
@@ -116,19 +124,19 @@ func (l *Listener) parseCommandName(tokens []string) string {
 	}
 }
 
-func (l *Listener) parseCommandArgs(tokens []string) []string {
+func (l *CommandListener) parseCommandArgs(tokens []string) []string {
 	return tokens[2:]
 }
 
-func (l *Listener) messageTokens(ev *slack.MessageEvent) []string {
+func (l *CommandListener) messageTokens(ev *slack.MessageEvent) []string {
 	return strings.Split(strings.TrimSpace(ev.Msg.Text), " ")
 }
 
-func (l *Listener) messageFromBot(ev *slack.MessageEvent) bool {
+func (l *CommandListener) messageFromBot(ev *slack.MessageEvent) bool {
 	return ev.Msg.SubType == "bot_message"
 }
 
 
-func (l *Listener) mentionToMe(req *Request) bool {
+func (l *CommandListener) mentionToMe(req *CommandRequest) bool {
 	return req.Mention == fmt.Sprintf("<@%s>", l.botId)
 }

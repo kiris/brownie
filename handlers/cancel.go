@@ -1,10 +1,11 @@
-package interaction
+package handlers
 
 import (
-	"github.com/kiris/brownie/components"
 	"net/http"
 
 	"github.com/nlopes/slack"
+
+	"github.com/kiris/brownie/components"
 )
 
 type CancelHandler struct {

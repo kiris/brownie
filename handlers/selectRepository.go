@@ -1,18 +1,19 @@
-package interaction
+package handlers
 
 import (
-	"github.com/kiris/brownie/components"
-	"github.com/kiris/brownie/model"
 	"github.com/nlopes/slack"
 	"github.com/pkg/errors"
 	"net/http"
+
+	"github.com/kiris/brownie/components"
+	"github.com/kiris/brownie/models"
 )
 
-type SelectBranchHandler struct {
-	Workspace *model.Workspace
+type SelectRepositoryHandler struct {
+	Workspace *models.Workspace
 }
 
-func (h *SelectBranchHandler) ServInteraction(w http.ResponseWriter, callback *slack.InteractionCallback) error {
+func (h *SelectRepositoryHandler) ServInteraction(w http.ResponseWriter, callback *slack.InteractionCallback) error {
 	component := components.NewMakeComponentFromInteraction(callback, true)
 
 	repoName := component.SelectedRepository()
@@ -20,8 +21,7 @@ func (h *SelectBranchHandler) ServInteraction(w http.ResponseWriter, callback *s
 	if repository == nil {
 		return errors.Errorf("failed to exec make command. repository not found: name = %s", repoName)
 	}
-	targets, _ := repository.CollectMakeTargets()
-	component.AppendSelectTargetAttachment(targets)
+	component.AppendSelectBranchAttachment()
 
 	renderer := components.InteractionRenderer{
 		Writer:   w,
@@ -29,3 +29,4 @@ func (h *SelectBranchHandler) ServInteraction(w http.ResponseWriter, callback *s
 	}
 	return renderer.Render(component)
 }
+

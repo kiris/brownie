@@ -1,14 +1,14 @@
 package components
 
 import (
-	"github.com/kiris/brownie/model"
+	"github.com/kiris/brownie/models"
 	"github.com/nlopes/slack"
 )
 
 type MakeOutputComponent struct {
 	Channel string
 	ThreadTs string
-	Result *model.ExecMakeResult
+	Result *models.ExecMakeResult
 }
 
 

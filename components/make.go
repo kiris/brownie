@@ -2,8 +2,9 @@ package components
 
 import (
 	"fmt"
-	"github.com/kiris/brownie/model"
 	"github.com/nlopes/slack"
+
+	"github.com/kiris/brownie/models"
 )
 
 const (
@@ -66,7 +67,7 @@ func (c *MakeComponent) SelectedTarget() string {
 	return c.attachments[2].Actions[0].SelectedOptions[0].Value
 }
 
-func (c *MakeComponent) AppendSelectRepositoryAttachment(repositories []*model.Repository) {
+func (c *MakeComponent) AppendSelectRepositoryAttachment(repositories []*models.Repository) {
 	options := make([]slack.AttachmentActionOption, len(repositories))
 	for i, r := range repositories {
 		options[i] = slack.AttachmentActionOption{
@@ -182,7 +183,7 @@ func (c *MakeComponent) InProgress(user slack.User) {
 	}
 }
 
-func (c *MakeComponent) Done(result *model.ExecMakeResult) *MakeOutputComponent {
+func (c *MakeComponent) Done(result *models.ExecMakeResult) *MakeOutputComponent {
 	if result.Success {
 		c.attachments[0].Title = ":tada: make command SUCCESS!!"
 		c.attachments[0].Color = "good"

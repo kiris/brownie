@@ -54,7 +54,7 @@ func (r *ApiRenderer) Render(component Component) error {
 			slack.MsgOptionAttachments(attachments ...),
 		}
 		if threadTs != "" {
-			options = append(options, slack.MsgOptionTS(ts))
+			options = append(options, slack.MsgOptionTS(threadTs))
 		}
 		if _, _, err := r.Client.PostMessage(channel, options ...); err != nil {
 			return errors.Wrapf(err, "failed to render: Channel = %s", channel)

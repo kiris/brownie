@@ -1,18 +1,18 @@
-package interaction
+package handlers
 
 import (
-	"github.com/kiris/brownie/components"
 	"github.com/nlopes/slack"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 
-	"github.com/kiris/brownie/model"
+	"github.com/kiris/brownie/components"
+	"github.com/kiris/brownie/models"
 )
 
 type ExecMakeHandler struct {
 	Client    *slack.Client
-	Workspace *model.Workspace
+	Workspace *models.Workspace
 }
 
 func (h *ExecMakeHandler) ServInteraction(w http.ResponseWriter, callback *slack.InteractionCallback) error {
@@ -65,7 +65,7 @@ func (h *ExecMakeHandler) asyncResponse(component *components.MakeComponent, out
 	return nil
 }
 
-func (h *ExecMakeHandler) execMake(repoName string, branchName string, target string) (*model.ExecMakeResult, error) {
+func (h *ExecMakeHandler) execMake(repoName string, branchName string, target string) (*models.ExecMakeResult, error) {
 	repository := h.Workspace.GetRepository(repoName)
 	if repository == nil {
 		return nil, errors.Errorf("repository not found: name = %s", repoName)
