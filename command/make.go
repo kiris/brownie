@@ -4,8 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kiris/brownie/model"
 	"github.com/nlopes/slack"
+	"github.com/pkg/errors"
+
+
+	"github.com/kiris/brownie/interaction"
+	"github.com/kiris/brownie/model"
+
 )
 
 type MakeHandler struct {
@@ -15,52 +20,54 @@ type MakeHandler struct {
 
 func (h *MakeHandler) ExecCommand(req *Request) error {
 	if len(req.CommandArgs) == 0 {
+		repositories, err := h.Workspace.GetRepositories()
+		if err != nil {
+			return errors.Wrap(err, "failed to exec make command")
+		}
+
 		// exec interactive mode.
-		return h.postConfigMakeMessage(req)
+		return h.sendSelectRepositoryMessage(req, repositories)
 	} else {
 		// exec batch mode.
-		projectName := req.CommandArgs[0]
+		repoName := req.CommandArgs[0]
 		targets := req.CommandArgs[1:]
 
-		result, err := h.execMake(projectName, targets)
-		if err != nil {
-			// TODO
-			return err
+		repository := h.Workspace.GetRepository(repoName)
+		if repository == nil {
+			return errors.Errorf("failed to exec make command. repository not found: name = %s", repoName)
 		}
 
-		return h.postResultMessages(req, result)
+		result := repository.ExecMake(targets)
+		return h.sendResultMessages(req, result)
 	}
 }
 
-
-func (h *MakeHandler) execMake(projectName string, targets []string) (*model.ExecMakeResult, error) {
-	project := h.Workspace.GetProject(projectName)
-	if project == nil {
-		return nil, fmt.Errorf("project not found. name = %s", projectName)
+func (h *MakeHandler) sendSelectRepositoryMessage(req *Request, repositories []*model.Repository) error {
+	// textOption :=  slack.MsgOptionText("Setting Make Command", false)
+	component := interaction.MakeSettingsComponent {
+		Attachments: nil,
 	}
+	component.AppendSelectRepositoryAttachment(repositories)
+	attachmentOption := slack.MsgOptionAttachments(component.Attachments ...)
 
-	result := project.ExecMake(targets)
-	return result, nil
-}
-
-
-
-func (h *MakeHandler) postResultMessages(cmd *Request, result *model.ExecMakeResult) error {
-	if ts, err := h.sendResultMessage(cmd, result); err != nil {
-		return fmt.Errorf("failed to post message: %s", err)
-	} else {
-		if _, err := h.sentResultDetailMessage(cmd, ts, result); err != nil {
-			return fmt.Errorf("failed to post message: %s", err)
-		}
+	if _, _, err := h.Client.PostMessage(req.Event.Channel, attachmentOption); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (h *MakeHandler) sendResultMessage(cmd *Request, result *model.ExecMakeResult) (string, error) {
-	user, err := h.Client.GetUserInfo(cmd.Event.User)
+func (h *MakeHandler) sendResultMessages(req *Request, result *model.ExecMakeResult) error {
+	ts, err := h.sendResultMessage(req, result)
 	if err != nil {
-		return "", fmt.Errorf("failed to get user info: %s", cmd.Event.User)
+		return err
+	}
+	return h.sendResultDetailMessage(req, ts, result)
+}
+func (h *MakeHandler) sendResultMessage(req *Request, result *model.ExecMakeResult) (string, error) {
+	user, err := h.Client.GetUserInfo(req.Event.User)
+	if err != nil {
+		return "", err
 	}
 
 	attachment := slack.Attachment{
@@ -69,7 +76,7 @@ func (h *MakeHandler) sendResultMessage(cmd *Request, result *model.ExecMakeResu
 		Fields: []slack.AttachmentField{
 			{
 				Title: "project",
-				Value: result.Project.Name,
+				Value: result.Repository.Name,
 			},
 			{
 				Title: "branch",
@@ -83,8 +90,14 @@ func (h *MakeHandler) sendResultMessage(cmd *Request, result *model.ExecMakeResu
 		Footer: fmt.Sprintf("Executed by %s", user.Name),
 		FooterIcon: user.Profile.Image32,
 	}
+	options := slack.MsgOptionAttachments(attachment)
 
-	return cmd.ResponseAttachmentsMessage(attachment)
+	_, ts, err := h.Client.PostMessage(req.Event.Channel, options)
+	if err != nil {
+		return "", err
+	}
+
+	return ts, nil
 }
 
 func (h *MakeHandler) title(result *model.ExecMakeResult) string {
@@ -111,7 +124,7 @@ func (h *MakeHandler) targets(result *model.ExecMakeResult) string {
 	}
 }
 
-func (h *MakeHandler) sentResultDetailMessage(cmd *Request, timestamp string, result *model.ExecMakeResult) (string, error) {
+func (h *MakeHandler) sendResultDetailMessage(req *Request, timestamp string, result *model.ExecMakeResult) error {
 	ts := slack.MsgOptionTS(timestamp)
 	attachment := slack.MsgOptionAttachments(
 		slack.Attachment{
@@ -130,43 +143,12 @@ func (h *MakeHandler) sentResultDetailMessage(cmd *Request, timestamp string, re
 		},
 	)
 
-	return cmd.ResponseMessage(ts, attachment)
-}
-
-
-func (h *MakeHandler) postConfigMakeMessage(cmd *Request) error {
-	attachment := slack.Attachment{
-		Title     : "select branch",
-		CallbackID: "make",
-		Actions   : []slack.AttachmentAction{
-			{
-				Name   : "branch",
-				Type   : "select",
-				Options: []slack.AttachmentActionOption {
-					{
-						Text : "master",
-						Value: "master",
-					},
-					{
-						Text : "staging",
-						Value: "staging",
-					},
-
-				},
-			},
-			{
-				Name : "cancel",
-				Text : "Cancel",
-				Type : "button",
-				Style: "danger",
-			},
-		},
-	}
-
-	if _, err := cmd.ResponseAttachmentsMessage(attachment); err != nil {
-		return fmt.Errorf("failed to post message: %s", err)
+	_, _, err := h.Client.PostMessage(req.Event.Channel, ts, attachment)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
+
 

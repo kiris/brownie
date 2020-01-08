@@ -9,13 +9,13 @@ import (
 	"github.com/kiris/brownie/lib/make"
 )
 
-type Project struct {
+type Repository struct {
 	Name string
 	Path string
 }
 
 
-type ProjectConfig struct {
+type RepositoryConfig struct {
 }
 
 type Makefile struct {
@@ -27,27 +27,27 @@ type ExecMakeSetting struct {
 }
 
 type ExecMakeResult struct {
-	Project *Project
-	Branch  string
-	Targets []string
-	Exec    string
-	Output  string
-	Success bool
-	Error   error
+	Repository *Repository
+	Branch     string
+	Targets    []string
+	Exec       string
+	Output     string
+	Success    bool
+	Error      error
 }
 
-func GetProject(path string) *Project {
+func GetProject(path string) *Repository {
 	if !file.IsExistsDir(path) {
 		return nil
 	}
 
-	return &Project {
+	return &Repository{
 		Name: filepath.Base(path),
 		Path: path,
 	}
 }
 
-func (p *Project) ExecMake(targets []string) *ExecMakeResult {
+func (p *Repository) ExecMake(targets []string) *ExecMakeResult {
 	cmd := make.Make {
 		Dir    : p.Path,
 		Targets: targets,
@@ -59,17 +59,17 @@ func (p *Project) ExecMake(targets []string) *ExecMakeResult {
 	}
 
 	return &ExecMakeResult{
-		Project: p,
-		Branch : "master",
-		Targets: targets,
-		Exec   : exec,
-		Output : output,
-		Success: err == nil,
-		Error  : err,
+		Repository: p,
+		Branch :    "master",
+		Targets:    targets,
+		Exec   :    exec,
+		Output :    output,
+		Success:    err == nil,
+		Error  :    err,
 	}
 }
 
-func (p *Project) CollectMakeTargets() ([]string, error) {
+func (p *Repository) CollectMakeTargets() ([]string, error) {
 	cmd := make.Make {
 		Dir               : p.Path,
 		PrintDataBase     : true,
@@ -86,7 +86,7 @@ func (p *Project) CollectMakeTargets() ([]string, error) {
 	return make.ParseDataBase(output), nil
 }
 
-//func getConfig(_ string) (*ProjectConfig, Error) {
+//func getConfig(_ string) (*RepositoryConfig, Error) {
 //	return nil, nil
 //}
 //

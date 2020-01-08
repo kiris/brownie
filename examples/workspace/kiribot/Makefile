@@ -1,8 +1,10 @@
 
-help: deploy
+.PHONY: help
+help:
 	@echo $@
 
-test:: deploy
+.PHONY: test
+test:
 	@echo $@
 
 deploy:

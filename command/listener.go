@@ -1,13 +1,12 @@
 package command
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/nlopes/slack"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 
@@ -84,12 +83,12 @@ func (l *Listener) handleMessageEvent(ev *slack.MessageEvent) {
 	fmt.Println(req.CommandName)
 	handler, ok := l.handlers[req.CommandName]
 	if !ok {
-		// unknown command.
+		log.WithField("command", req.CommandName).Warn("unknown command")
 		return
 	}
 
 	if err := handler.ExecCommand(req); err != nil {
-		// TODO logging or response.
+		log.WithError(err).WithField("command", req.CommandName).Error("failed exec command")
 		return
 	}
 }

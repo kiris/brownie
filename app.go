@@ -1,11 +1,12 @@
 package brownie
 
 import (
-	"github.com/kiris/brownie/model"
 	"github.com/nlopes/slack"
+	"github.com/pkg/errors"
 
 	"github.com/kiris/brownie/command"
 	"github.com/kiris/brownie/interaction"
+	"github.com/kiris/brownie/model"
 )
 
 type App struct {
@@ -21,7 +22,7 @@ func CreateApp(slackToken, verificationToken, workSpaceDir string) *App {
 	return &App{
 		client           : client,
 		commandListener  : command.CreateListener(client),
-		interactionServer: interaction.CreateServer(verificationToken),
+		interactionServer: interaction.CreateServer(verificationToken, ":8081"),
 		workspace        : model.NewWorkspace(workSpaceDir),
 	}
 }
@@ -32,18 +33,32 @@ func (app *App) Run() error {
 		Workspace: app.workspace,
 	})
 
-	// TODO error code
-	go app.commandListener.ListenAndResponse()
-	//if err := app.commandListener.ListenAndResponse(); err != nil {
-	//	return err
-	//}
+	errChan := make(chan error, 1)
+	go func() {
+		err := app.commandListener.ListenAndResponse()
+		if err != nil {
+			errChan <- errors.Wrap(err, "failed command listener start.")
+		}
+		errChan <- nil
+	}()
 
-	app.interactionServer.Handle("cancel", &interaction.CancelHandler {
+	app.interactionServer.Handle(interaction.ActionSelectRepository, &interaction.SelectRepositoryHandler {
+		Workspace: app.workspace,
 	})
-	if err := app.interactionServer.ListenAndServ("8080"); err != nil {
-		return err
+	app.interactionServer.Handle(interaction.ActionSelectBranch, &interaction.SelectBranchHandler {
+		Workspace: app.workspace,
+	})
+	app.interactionServer.Handle(interaction.ActionSelectTarget, &interaction.SelectTargetHandler {
+		Workspace: app.workspace,
+	})
+	app.interactionServer.Handle(interaction.ActionExecMake, &interaction.ExecMakeHandler{
+		Client:    app.client,
+		Workspace: app.workspace,
+	})
+	app.interactionServer.Handle(interaction.ActionCancel, &interaction.CancelHandler {})
+	if err := app.interactionServer.ListenAndServ(); err != nil {
+		return errors.Wrap(err, "failed interaction server start.")
 	}
 
-
-	return nil
+	return <-errChan
 }

@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var targetRegexp = regexp.MustCompile(`^([^#:]+):.*$`)
+var targetRegexp = regexp.MustCompile(`^([[:alnum:]][^#:]*):.*$`)
 
 type parser struct {
 	targets []string
@@ -23,7 +23,8 @@ func ParseDataBase(output string) []string {
 		scanner: scanner,
 	}
 
-	return parser.parse()
+	targets := parser.parse()
+	return targets
 }
 
 func (p *parser) parse() []string {
@@ -38,8 +39,7 @@ func (p *parser) parse() []string {
 }
 
 func (p *parser) parseDB() {
-	log.Info("start parseDB")
-
+	log.Debug("start parseDB")
 	for p.scanner.Scan() {
 		if p.scanner.Text() == "# Files" {
 			p.scanner.Scan() // skip the first empty line
@@ -50,7 +50,7 @@ func (p *parser) parseDB() {
 }
 
 func (p *parser) parseEntries() {
-	log.Info("start parseEntries")
+	log.Debug("start parseEntries")
 	for p.scanner.Scan() {
 		line := p.scanner.Text()
 		switch {
@@ -60,6 +60,7 @@ func (p *parser) parseEntries() {
 			p.skipUntilNextEntry()
 		case targetRegexp.MatchString(line):
 			target := targetRegexp.FindStringSubmatch(line)[1]
+			log.Info("match target:", target)
 			p.targets = append(p.targets, target)
 			p.skipUntilNextEntry()
 		}

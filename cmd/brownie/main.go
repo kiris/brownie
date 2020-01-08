@@ -1,8 +1,9 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/kiris/brownie"
 )
@@ -21,12 +22,12 @@ func init() {
 func main() {
 	app, err := brownie.CreateAppFromEnvironmentVariables()
 	if err != nil {
-		log.WithField("cause", err).Error("Failed to load env.")
+		log.WithError(err).Error("Failed to load env.")
 		os.Exit(1)
 	}
 
 	if err := app.Run(); err != nil {
-		log.WithField("cause", err).Error("Failed to start listen and response.")
+		log.WithError(err).Error("Failed to start listen and response.")
 		os.Exit(1)
 	}
 }
