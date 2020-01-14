@@ -13,7 +13,7 @@ type SelectRepositoryHandler struct {
 	Workspace *models.Workspace
 }
 
-func (h *SelectRepositoryHandler) ServInteraction(w http.ResponseWriter, callback *slack.InteractionCallback) error {
+func (h *SelectRepositoryHandler) ServeInteraction(w http.ResponseWriter, callback *slack.InteractionCallback) error {
 	component := components.NewMakeComponentFromInteraction(callback, true)
 
 	selectedRepository := component.SelectedRepository()
@@ -21,6 +21,7 @@ func (h *SelectRepositoryHandler) ServInteraction(w http.ResponseWriter, callbac
 	if repository == nil {
 		return errors.Errorf("failed to exec make command. repository not found: name = %s", selectedRepository)
 	}
+	branches := repository.Branches()
 	component.AppendSelectBranchAttachment()
 
 	renderer := components.InteractionRenderer{

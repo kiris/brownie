@@ -8,7 +8,7 @@ import (
 type MakeOutputComponent struct {
 	Channel string
 	ThreadTs string
-	Result *models.ExecMakeResult
+	Result *models.RunMakeResult
 }
 
 

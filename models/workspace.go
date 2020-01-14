@@ -34,7 +34,7 @@ func (w *Workspace) Repositories() ([]*Repository, error) {
 }
 
 func (w *Workspace) Repository(name string) *Repository {
-	path := w.getRepositoryPath(name)
+	path := w.RepositoryPath(name)
 
 	if !file.IsExistsDir(path) {
 		return nil
@@ -47,6 +47,6 @@ func (w *Workspace) CreateRepository(url string) (*Repository, error) {
 	return NewRepositoryByGitClone(w.RootDir, url)
 }
 
-func (w *Workspace) getRepositoryPath(name string) string {
+func (w *Workspace) RepositoryPath(name string) string {
 	return filepath.Join(w.RootDir, name)
 }

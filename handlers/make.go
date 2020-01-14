@@ -33,20 +33,20 @@ func (h *MakeCommandHandler) ExecCommand(req *slack.CommandRequest) error {
 		//	return errors.Errorf("failed to exec make command. repository not found: name = %s", repoName)
 		//}
 		//
-		//result := repository.ExecMake(targets)
+		//result := repository.RunMake(targets)
 		//return h.sendResultMessages(req, result)
 		return nil
 	}
 }
 
-//func (h *MakeCommandHandler) sendResultMessages(req *CommandRequest, result *model.ExecMakeResult) error {
+//func (h *MakeCommandHandler) sendResultMessages(req *CommandRequest, result *model.RunMakeResult) error {
 //	ts, err := h.sendResultMessage(req, result)
 //	if err != nil {
 //		return err
 //	}
 //	return h.sendResultDetailMessage(req, ts, result)
 //}
-//func (h *MakeCommandHandler) sendResultMessage(req *CommandRequest, result *model.ExecMakeResult) (string, error) {
+//func (h *MakeCommandHandler) sendResultMessage(req *CommandRequest, result *model.RunMakeResult) (string, error) {
 //	user, err := h.Client.GetUserInfo(req.Event.User)
 //	if err != nil {
 //		return "", err
@@ -82,7 +82,7 @@ func (h *MakeCommandHandler) ExecCommand(req *slack.CommandRequest) error {
 //	return ts, nil
 //}
 //
-//func (h *MakeCommandHandler) title(result *model.ExecMakeResult) string {
+//func (h *MakeCommandHandler) title(result *model.RunMakeResult) string {
 //	if result.Success {
 //		return ":tada: make command SUCCESS!!"
 //	} else {
@@ -90,7 +90,7 @@ func (h *MakeCommandHandler) ExecCommand(req *slack.CommandRequest) error {
 //	}
 //}
 //
-//func (h *MakeCommandHandler) color(result *model.ExecMakeResult) string {
+//func (h *MakeCommandHandler) color(result *model.RunMakeResult) string {
 //	if result.Success {
 //		return "good"
 //	} else {
@@ -98,7 +98,7 @@ func (h *MakeCommandHandler) ExecCommand(req *slack.CommandRequest) error {
 //	}
 //}
 //
-//func (h *MakeCommandHandler) targets(result *model.ExecMakeResult) string {
+//func (h *MakeCommandHandler) targets(result *model.RunMakeResult) string {
 //	if len(result.Targets) == 0 {
 //		return "(default)"
 //	} else {
@@ -106,7 +106,7 @@ func (h *MakeCommandHandler) ExecCommand(req *slack.CommandRequest) error {
 //	}
 //}
 //
-//func (h *MakeCommandHandler) sendResultDetailMessage(req *CommandRequest, timestamp string, result *model.ExecMakeResult) error {
+//func (h *MakeCommandHandler) sendResultDetailMessage(req *CommandRequest, timestamp string, result *model.RunMakeResult) error {
 //	ts := slack.MsgOptionTS(timestamp)
 //	attachment := slack.MsgOptionAttachments(
 //		slack.Attachment{

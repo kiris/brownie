@@ -62,12 +62,12 @@ func (h *ExecMakeHandler) asyncResponse(component *components.MakeComponent, out
 	return nil
 }
 
-func (h *ExecMakeHandler) execMake(repoName string, branchName string, target string) (*models.ExecMakeResult, error) {
+func (h *ExecMakeHandler) execMake(repoName string, branchName string, target string) (*models.RunMakeResult, error) {
 	repository := h.Workspace.Repository(repoName)
 	if repository == nil {
 		return nil, errors.Errorf("repository not found: name = %s", repoName)
 	}
 
-	return repository.ExecMake([]string {target}), nil
+	return repository.RunMake([]string {target}), nil
 }
 

@@ -150,7 +150,7 @@ func (c *MakeComponent) AppendSelectTargetAttachment(targets []string) {
 
 func (c *MakeComponent) AppendConfirmExecAttachment() {
 	attachment := slack.Attachment{
-		Title:      "exec make?",
+		Title:      ":hammer_and_wrench: Can you run make with this setting?",
 		CallbackID: "exec",
 		Actions:    []slack.AttachmentAction{
 			{
@@ -183,7 +183,7 @@ func (c *MakeComponent) InProgress(user slack.User) {
 	}
 }
 
-func (c *MakeComponent) Done(result *models.ExecMakeResult) *MakeOutputComponent {
+func (c *MakeComponent) Done(result *models.RunMakeResult) *MakeOutputComponent {
 	if result.Success {
 		c.attachments[0].Title = ":tada: make command SUCCESS!!"
 		c.attachments[0].Color = "good"

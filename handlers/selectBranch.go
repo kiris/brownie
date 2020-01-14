@@ -21,7 +21,7 @@ func (h *SelectBranchHandler) ServInteraction(w http.ResponseWriter, callback *s
 	if repository == nil {
 		return errors.Errorf("failed to exec make command. repository not found: name = %s", selectedRepository)
 	}
-	targets, _ := repository.CollectMakeTargets()
+	targets, _ := repository.Targets()
 	component.AppendSelectTargetAttachment(targets)
 
 	renderer := components.InteractionRenderer{

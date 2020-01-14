@@ -1,6 +1,8 @@
 package models
 
 import (
+	"github.com/pkg/errors"
+	"gopkg.in/src-d/go-git.v4/plumbing"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +16,7 @@ import (
 type Repository struct {
 	Name string
 	Path string
+	gitRepo *git.Repository
 }
 
 
@@ -25,10 +28,7 @@ type Makefile struct {
 }
 
 
-type ExecMakeSetting struct {
-}
-
-type ExecMakeResult struct {
+type RunMakeResult struct {
 	Repository *Repository
 	Branch     string
 	Targets    []string
@@ -38,21 +38,35 @@ type ExecMakeResult struct {
 	Error      error
 }
 
-func NewRepository(path string) *Repository {
+func NewRepository(path string) (*Repository, error) {
+	gitRepo, err := git.PlainOpen(path)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Repository{
 		Name: filepath.Base(path),
 		Path: path,
-	}
+		gitRepo: gitRepo,
+	}, nil
 }
 
 func NewRepositoryByGitClone(rootPath string, url string) (*Repository, error) {
 	name := extractRepositoryName(url)
-	_, err := git.PlainClone(rootPath + "/" + name, false, &git.CloneOptions{
+	path := rootPath + "/" + name
+	gitRepo, err := git.PlainClone(path, false, &git.CloneOptions{
 		URL:      url,
 		Progress: os.Stdout,
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, err
+	return &Repository{
+		Name: name,
+		Path: path,
+		gitRepo: gitRepo,
+	}, nil
 }
 
 
@@ -76,7 +90,7 @@ func extractRepositoryName(name string) string {
 
 }
 
-func (p *Repository) ExecMake(targets []string) *ExecMakeResult {
+func (p *Repository) RunMake(targets []string) *RunMakeResult {
 	cmd := make.Make {
 		Dir    : p.Path,
 		Targets: targets,
@@ -84,10 +98,10 @@ func (p *Repository) ExecMake(targets []string) *ExecMakeResult {
 	}
 	exec, output, err := cmd.Exec()
 	if err != nil {
-		log.WithField("cause", err).Info("Failed to ExecCommand handleMakeCommand.")
+		log.WithField("cause", err).Warn("Failed to ExecCommand handleMakeCommand.")
 	}
 
-	return &ExecMakeResult{
+	return &RunMakeResult{
 		Repository: p,
 		Branch :    "master",
 		Targets:    targets,
@@ -98,7 +112,26 @@ func (p *Repository) ExecMake(targets []string) *ExecMakeResult {
 	}
 }
 
-func (p *Repository) CollectMakeTargets() ([]string, error) {
+func (p *Repository) Branches() ([]string, error) {
+	r, err := git.PlainOpen(p.Path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to branches: path %s", p.Path)
+	}
+
+	branches, err := r.Branches()
+
+	var results []string
+	_ := branches.ForEach(func(reference *plumbing.Reference) error {
+
+		reference.Name().Short()
+		return nil
+	})
+	for b :=  branches.ForEach() {
+
+	}
+}
+
+func (p *Repository) Targets() ([]string, error) {
 	cmd := make.Make {
 		Dir               : p.Path,
 		PrintDataBase     : true,
@@ -108,15 +141,16 @@ func (p *Repository) CollectMakeTargets() ([]string, error) {
 
 	_, output, err := cmd.Exec()
 	if err != nil {
-		log.WithField("cause", err).Info("Failed to ExecCommand handleMakeCommand.")
-		return nil, err
+		return nil, errors.Wrap(err, "failed to Targets")
 	}
 
 	return make.ParseDataBase(output), nil
 }
 
-//func getConfig(_ string) (*RepositoryConfig, Error) {
-//	return nil, nil
-//}
-//
-//func getMakefile
+func (p *Repository) fetch() error {
+
+}
+
+func (p *Repository) fetch() error {
+	return nil
+}
